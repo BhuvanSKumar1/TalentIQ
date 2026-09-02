@@ -1,6 +1,12 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm run build",
+  "buildCommand": "cd apps/web && npx tsc && npx vite build",
   "framework": null,
-  "outputDirectory": "apps/web/dist"
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [
+    {
+      "source": "/((?!assets/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
