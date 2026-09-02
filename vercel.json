@@ -1,6 +1,6 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "cd apps/web && npx tsc && npx vite build",
+  "buildCommand": "pnpm --filter web build",
   "framework": null,
   "outputDirectory": "apps/web/dist",
   "rewrites": [
