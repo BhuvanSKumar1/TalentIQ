@@ -1,6 +1,7 @@
 {
   "name": "taliq",
   "private": true,
+  "packageManager": "pnpm@8.15.0",
   "description": "TalentIQ - AI Recruitment Intelligence Platform",
   "scripts": {
     "dev": "concurrently \"pnpm --filter api dev\" \"pnpm --filter web dev\"",
