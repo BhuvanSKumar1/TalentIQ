@@ -1,6 +1,6 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter web build",
+  "buildCommand": "pnpm --filter web exec vite build",
   "framework": null,
   "outputDirectory": "apps/web/dist",
   "rewrites": [

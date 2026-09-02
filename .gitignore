@@ -50,3 +50,8 @@ apps/api/prisma/migrations/**/migration_lock.toml
 .cache/
 # Freebuff local state and credentials
 .freebuff/
+
+# Generated TypeScript/Vite files
+*.tsbuildinfo
+apps/web/vite.config.js
+apps/web/vite.config.d.ts
