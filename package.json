@@ -1,11 +1,11 @@
 {
   "name": "taliq",
   "private": true,
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@10.0.0",
   "description": "TalentIQ - AI Recruitment Intelligence Platform",
   "scripts": {
     "dev": "concurrently \"pnpm --filter api dev\" \"pnpm --filter web dev\"",
-    "build": "cd apps/web && pnpm exec vite build",
+    "build": "bash build-vercel.sh",
     "build:full": "pnpm --filter shared build && pnpm --filter api build && pnpm --filter web build",
     "lint": "pnpm -r lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
@@ -21,7 +21,6 @@
     "typescript": "^5.3.3"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=20.0.0"
   }
 }
