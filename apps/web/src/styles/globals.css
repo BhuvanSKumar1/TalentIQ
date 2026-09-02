@@ -1,0 +1,270 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── Background ─────────────────────────────── */
+    --bg-primary: #080A0F;
+    --bg-secondary: #0D1017;
+    --bg-tertiary: #11151E;
+    --bg-elevated: #151A24;
+    --bg-hover: #1A2030;
+
+    /* ── Borders ────────────────────────────────── */
+    --border-subtle: #1C2230;
+    --border-default: #252C3A;
+    --border-hover: #343D52;
+    --border-active: rgba(99, 123, 255, 0.45);
+
+    /* ── Text ───────────────────────────────────── */
+    --text-primary: #F1F3F7;
+    --text-secondary: #A4AABA;
+    --text-muted: #707789;
+    --text-accent: #637BFF;
+
+    /* ── Accent ─────────────────────────────────── */
+    --accent: #637BFF;
+    --accent-hover: #7288FF;
+    --accent-soft: rgba(99, 123, 255, 0.08);
+    --accent-border: rgba(99, 123, 255, 0.18);
+    --accent-text: #8B99FF;
+
+    /* ── Semantic ────────────────────────────────── */
+    --success: #35C99A;
+    --success-soft: rgba(53, 201, 154, 0.08);
+    --success-border: rgba(53, 201, 154, 0.16);
+    --warning: #E8A94A;
+    --warning-soft: rgba(232, 169, 74, 0.08);
+    --warning-border: rgba(232, 169, 74, 0.16);
+    --error: #EF6B7A;
+    --error-soft: rgba(239, 107, 122, 0.08);
+    --error-border: rgba(239, 107, 122, 0.16);
+    --info: #4EA7FF;
+    --info-soft: rgba(78, 167, 255, 0.08);
+    --info-border: rgba(78, 167, 255, 0.16);
+
+    /* ── Shadows ────────────────────────────────── */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.24);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.28);
+    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.32);
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.40);
+
+    /* ── Radius ─────────────────────────────────── */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+
+    color-scheme: dark;
+  }
+
+  * {
+    border-color: var(--border-subtle);
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ── Scrollbar ─────────────────────────────────── */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+  }
+
+  /* ── Selection ─────────────────────────────────── */
+  ::selection {
+    background: rgba(99, 123, 255, 0.25);
+    color: var(--text-primary);
+  }
+}
+
+@layer components {
+  /* ── Glass Effects ──────────────────────────────── */
+  .glass {
+    background: rgba(13, 16, 23, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .glass-light {
+    background: rgba(17, 21, 30, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border-subtle);
+  }
+
+  /* ── Gradients ──────────────────────────────────── */
+  .gradient-brand {
+    background: linear-gradient(135deg, #637BFF, #7C6CFF);
+  }
+
+  .gradient-brand-subtle {
+    background: linear-gradient(135deg, rgba(99, 123, 255, 0.12), rgba(124, 108, 255, 0.06));
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #637BFF, #8B99FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Card System ────────────────────────────────── */
+  .card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+  }
+
+  .card-hover:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-default);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  /* ── Input System ───────────────────────────────── */
+  .input-premium {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    transition: all 0.15s ease;
+  }
+
+  .input-premium::placeholder {
+    color: var(--text-muted);
+  }
+
+  .input-premium:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-secondary);
+  }
+
+  .input-premium:focus {
+    border-color: rgba(99, 123, 255, 0.55);
+    box-shadow: 0 0 0 3px rgba(99, 123, 255, 0.08);
+    outline: none;
+  }
+
+  /* ── Button System ──────────────────────────────── */
+  .btn-primary {
+    background: var(--accent);
+    color: #FFFFFF;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    transition: all 0.15s ease;
+    box-shadow: 0 4px 16px rgba(99, 123, 255, 0.18);
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    box-shadow: 0 6px 20px rgba(99, 123, 255, 0.24);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(99, 123, 255, 0.12);
+  }
+
+  .btn-secondary {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    transition: all 0.15s ease;
+  }
+
+  .btn-secondary:hover {
+    background: var(--bg-elevated);
+    border-color: var(--border-hover);
+  }
+
+  /* ── Shimmer Loading ────────────────────────────── */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--bg-tertiary) 0%,
+      var(--bg-elevated) 50%,
+      var(--bg-tertiary) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  /* ── Focus Ring ─────────────────────────────────── */
+  .focus-ring {
+    outline: none;
+  }
+
+  .focus-ring:focus-visible {
+    box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--accent);
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  .transition-default {
+    transition: all 0.15s ease;
+  }
+
+  .transition-slow {
+    transition: all 0.25s ease;
+  }
+}
+
+/* ── Keyframes ─────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes slideUp {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ── Reduced Motion ────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
