@@ -1,8 +1,8 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm run build:vercel",
+  "buildCommand": "pnpm --filter web build",
   "framework": null,
-  "outputDirectory": "dist",
+  "outputDirectory": "apps/web/dist",
   "rewrites": [
     {
       "source": "/((?!assets/).*)",
