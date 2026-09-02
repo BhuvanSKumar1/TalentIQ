@@ -1,8 +1,8 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter web build",
-  "framework": null,
+  "buildCommand": "cd apps/web && npx vite build",
   "outputDirectory": "apps/web/dist",
+  "framework": null,
   "rewrites": [
     {
       "source": "/((?!assets/).*)",
