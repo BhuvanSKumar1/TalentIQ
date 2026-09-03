@@ -188,6 +188,48 @@ pnpm db:seed          # Seed database with demo data
 pnpm db:reset         # Reset and reseed database
 ```
 
+## Deploying to Vercel (Frontend + API)
+
+The Vercel project serves the React frontend **and** the Express API from the
+same domain:
+
+- `build.cjs` runs `prisma generate`, compiles the API (`apps/api/dist`), then
+  builds the web frontend (`apps/web/dist`).
+- The serverless function in `api/[...path].js` mounts the compiled Express app,
+  so every `/api/*` request is handled by the API on the same domain
+  (e.g. `https://<your-app>.vercel.app/api/v1/auth/login`). No CORS needed.
+- `apps/web/src/lib/api.ts` defaults to the same-origin path `/api/v1`, so login
+  and all API calls work without a `VITE_API_URL`.
+
+### Before your first deploy
+
+1. **Create a hosted PostgreSQL database** (free tier is fine, e.g. Neon or
+   Supabase) and copy its connection string.
+
+2. **Add these env vars to your Vercel project** (Project → Settings →
+   Environment Variables → Production):
+
+   | Variable | Example |
+   |----------|---------|
+   | `DATABASE_URL` | `postgresql://user:pass@host/db?sslmode=require` (Neon URL) |
+   | `JWT_SECRET` | random string of 32+ characters |
+   | `JWT_REFRESH_SECRET` | a different random string of 32+ characters |
+   | `CORS_ORIGIN` | `https://<your-app>.vercel.app` |
+
+3. **Create the schema and seed the demo data** (run once from this repo,
+   pointing at the hosted database):
+
+   ```bash
+   DATABASE_URL="<your-neon-url>" pnpm --filter api db:push
+   DATABASE_URL="<your-neon-url>" pnpm --filter api db:seed
+   ```
+
+4. **Commit and push** to redeploy. The build generates the Prisma client,
+   compiles the API, builds the frontend, and Vercel serves both from one URL.
+
+> Note: the seed script wipes and recreates data, so run it once against the
+> hosted database — not on every deploy.
+
 ## License
 
 Proprietary — TalentIQ © 2024

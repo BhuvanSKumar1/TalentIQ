@@ -24,10 +24,22 @@ export function LoginPage() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err: unknown) {
-      const msg = err instanceof Object && 'response' in err
-        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
-        : undefined;
-      setError(msg || 'Invalid credentials');
+      const e = err as {
+        response?: { status?: number; data?: { error?: string } };
+        message?: string;
+      };
+      const status = e?.response?.status;
+      if (status === 401) {
+        setError(e?.response?.data?.error || 'Invalid credentials');
+      } else if (e?.response?.data?.error) {
+        setError(e.response.data.error);
+      } else if (!e?.response && e?.message === 'Network Error') {
+        setError(
+          'Cannot reach the TalentIQ server. Make sure the API backend is running and reachable, then try again.'
+        );
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,15 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+// API base URL. Set VITE_API_URL at build time to point at your hosted API
+// (e.g. https://my-api.example.com/api/v1). Without it we use a same-origin
+// path, which works in local dev (Vite proxies /api -> http://localhost:3001)
+// and when the API is served from the same domain as the frontend.
+const configuredApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+
+export const API_URL = configuredApiUrl || '/api/v1';
+export const API_ORIGIN = configuredApiUrl && configuredApiUrl.startsWith('http')
+  ? new URL(configuredApiUrl).origin
+  : '';
 
 export const api = axios.create({
   baseURL: API_URL,

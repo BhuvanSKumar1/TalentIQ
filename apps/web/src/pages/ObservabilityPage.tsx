@@ -19,6 +19,7 @@ import {
   BarChart3,
   Shield,
 } from 'lucide-react';
+import { API_ORIGIN } from '@/lib/api';
 
 interface HealthCheck {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -61,7 +62,7 @@ interface DashboardData {
   auditActivity: { last24h: number };
 }
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = `${API_ORIGIN}/api`;
 
 const statusConfig = {
   healthy: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: CheckCircle2, label: 'Healthy' },
