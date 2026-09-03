@@ -278,7 +278,7 @@ function calculateProjectScore(
   candidateProjects: Array<{
     title: string;
     description?: string | null;
-    technologies?: string | null;
+    technologies?: string | string[] | null;
   }>,
   jobSkills: Array<{ skillName: string }>,
   jobDescription: string | null
@@ -289,6 +289,11 @@ function calculateProjectScore(
     return { score: 0, evidence: [{ type: 'project', detail: 'No projects recorded', score: 0 }] };
   }
 
+  // technologies is a String[] in the schema but historically a comma-separated
+  // string in some callers — normalize both shapes.
+  const projectTechList = (tech: string | string[] | null | undefined): string =>
+    Array.isArray(tech) ? tech.join(', ') : String(tech ?? '');
+
   const jobTechSet = new Set(
     jobSkills.map(js => js.skillName.toLowerCase())
   );
@@ -297,7 +302,7 @@ function calculateProjectScore(
   let totalTechMatches = 0;
 
   for (const proj of candidateProjects) {
-    const techs = (proj.technologies || '').toLowerCase().split(/[,\s]+/).filter(Boolean);
+    const techs = projectTechList(proj.technologies).toLowerCase().split(/[,\s]+/).filter(Boolean);
     for (const tech of techs) {
       for (const jobTech of jobTechSet) {
         if (tech.includes(jobTech) || jobTech.includes(tech)) {
@@ -335,7 +340,7 @@ function calculateProjectScore(
   for (const proj of candidateProjects.slice(0, 3)) {
     evidence.push({
       type: 'project',
-      detail: `"${proj.title}" — ${proj.technologies || 'No technologies listed'}`,
+      detail: `"${proj.title}" — ${projectTechList(proj.technologies) || 'No technologies listed'}`,
     });
   }
 

@@ -16,9 +16,10 @@
  *     All names, companies, emails, and scenarios are fictional.
  */
 
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
+import { calculateMatch } from '../src/services/matching.service';
 
 const prisma = new PrismaClient();
 
@@ -96,13 +97,15 @@ const UNIVERSITIES = [
   'University of Melbourne', 'University of Sydney', 'KAIST', 'Technion',
 ];
 
+// Full degree words ("Bachelor of …") because the product's education scorer
+// matches on the literal words bachelor/master/doctorate.
 const DEGREES = [
-  'B.S. Computer Science', 'B.S. Software Engineering', 'B.S. Information Technology',
-  'B.Tech Computer Science', 'B.Tech Information Technology', 'B.Sc. Mathematics',
-  'M.S. Computer Science', 'M.S. Data Science', 'M.S. Artificial Intelligence',
-  'M.S. Software Engineering', 'M.Tech Computer Science', 'M.Sc. Computer Science',
-  'Ph.D. Computer Science', 'Ph.D. Machine Learning', 'MBA', 'B.Sc. Physics',
-  'M.S. Information Systems', 'B.S. Electrical Engineering', 'M.Eng. Computer Science',
+  'Bachelor of Science in Computer Science', 'Bachelor of Science in Software Engineering', 'Bachelor of Science in Information Technology',
+  'Bachelor of Technology in Computer Science', 'Bachelor of Science in Mathematics', 'Bachelor of Science in Physics',
+  'Bachelor of Science in Electrical Engineering', 'Bachelor of Science in Data Science',
+  'Master of Science in Computer Science', 'Master of Science in Data Science', 'Master of Science in Artificial Intelligence',
+  'Master of Science in Software Engineering', 'Master of Science in Information Systems', 'Master of Business Administration',
+  'Doctor of Philosophy in Computer Science', 'Doctor of Philosophy in Machine Learning', 'Master of Engineering in Computer Science',
 ];
 
 const DEPARTMENTS = [
@@ -430,6 +433,100 @@ const NOTIFICATION_TITLES: Record<string, string[]> = {
 };
 
 // ══════════════════════════════════════════════════════════════
+// Role-aware candidate profiles
+// ══════════════════════════════════════════════════════════════
+//
+// Demo candidates are aligned with real job requirements so matching,
+// rankings, and skill-gap analysis surface meaningful results instead of
+// random low-overlap skill sets.
+
+// Only the first 12 job templates are PUBLISHED and receive applications —
+// align candidate profiles against those so the whole pipeline is coherent.
+const PUBLISHED_TEMPLATES = JOB_TEMPLATES.slice(0, 12);
+const CATALOG_SKILL_NAMES = new Set(ALL_SKILLS.map((s) => s.name));
+
+// Core (required) proficiency pool per role seniority. JobSkill weights below
+// are chosen so that a candidate at this level actually clears the bar.
+const CORE_PROFICIENCY: Record<string, string[]> = {
+  ENTRY: ['ADVANCED', 'ADVANCED', 'EXPERT', 'ADVANCED'],
+  MID: ['EXPERT', 'EXPERT', 'ADVANCED', 'EXPERT'],
+  SENIOR: ['EXPERT', 'EXPERT', 'EXPERT', 'EXPERT', 'ADVANCED'],
+  LEAD: ['EXPERT', 'EXPERT', 'EXPERT', 'EXPERT', 'ADVANCED'],
+};
+
+function pickRoleForExperience(years: number) {
+  const levels =
+    years <= 1 ? ['ENTRY']
+    : years <= 3 ? ['ENTRY', 'MID']
+    : years <= 5 ? ['MID']
+    : years <= 8 ? ['MID', 'SENIOR']
+    : ['SENIOR', 'LEAD'];
+  const pool = PUBLISHED_TEMPLATES.filter((t) => levels.includes(t.expLevel as string));
+  return pick(pool.length > 0 ? pool : PUBLISHED_TEMPLATES);
+}
+
+/**
+ * Build a skill set for a candidate aligned to a target role: required skills
+ * at core proficiency, a couple of preferred skills, plus extra skills for
+ * realistic breadth. ~15% of profiles are intentionally missing one or two
+ * required skills so match scores span a realistic range.
+ */
+function buildRoleSkills(tmpl: (typeof JOB_TEMPLATES)[number], years: number): {
+  skillNames: string[];
+  proficiency: Record<string, string>;
+  confidence: Record<string, number>;
+} {
+  const required = tmpl.requiredSkills.filter((s) => CATALOG_SKILL_NAMES.has(s));
+  const preferred = tmpl.preferredSkills.filter((s) => CATALOG_SKILL_NAMES.has(s));
+  const aligned = Math.random() < 0.85;
+
+  // Required skills the candidate actually has (aligned profiles keep all of
+  // them; the rest drop 1-2 so scores span a realistic range).
+  let core = required;
+  if (!aligned && required.length > 1) {
+    core = pickN(required, required.length - randInt(1, Math.min(2, required.length - 1)));
+  }
+
+  const names: string[] = [];
+  const proficiency: Record<string, string> = {};
+  const confidence: Record<string, number> = {};
+
+  const corePool = CORE_PROFICIENCY[tmpl.expLevel as string] || CORE_PROFICIENCY.MID;
+  for (const name of core) {
+    if (!names.includes(name)) names.push(name);
+    proficiency[name] = pick(corePool);
+    confidence[name] = randFloat(0.95, 0.99);
+  }
+
+  // Most preferred skills, at solid strength. Preferred skills still count in
+  // the product's skill-score denominator, so covering them lifts top matches.
+  const prefCount = aligned
+    ? Math.min(preferred.length, randInt(2, 3))
+    : Math.min(preferred.length, randInt(0, 2));
+  for (const name of pickN(preferred, prefCount)) {
+    if (!names.includes(name)) names.push(name);
+    proficiency[name] = pick(['ADVANCED', 'EXPERT', 'ADVANCED', 'INTERMEDIATE']);
+    confidence[name] = randFloat(0.8, 0.95);
+  }
+
+  // Extra skills for realistic breadth (target 6-9 skills total).
+  const extraPool =
+    years > 8 ? ['ADVANCED', 'EXPERT'] : years > 4 ? ['INTERMEDIATE', 'ADVANCED'] : ['BEGINNER', 'INTERMEDIATE'];
+  let guard = 0;
+  while (names.length < 6 && guard++ < 20) {
+    const name = pick(ALL_SKILLS).name;
+    if (!names.includes(name)) {
+      names.push(name);
+      proficiency[name] = pick(extraPool);
+      confidence[name] = randFloat(0.55, 0.9);
+    }
+  }
+  while (names.length > 9) names.splice(randInt(0, names.length - 1), 1);
+
+  return { skillNames: names, proficiency, confidence };
+}
+
+// ══════════════════════════════════════════════════════════════
 // Main Seed Function
 // ══════════════════════════════════════════════════════════════
 
@@ -589,15 +686,25 @@ async function main() {
         createdById: users[0].id,
       },
     });
-    // Add skills to job
+    // Add skills to job. Weights are per seniority so required levels are
+    // achievable by real profiles (weight 1.0 would demand mastery for
+    // everything and make every match look like a miss).
+    const reqWeight =
+      tmpl.expLevel === 'ENTRY' ? randFloat(0.55, 0.7)
+      : tmpl.expLevel === 'MID' ? randFloat(0.7, 0.85)
+      : randFloat(0.85, 0.95);
     for (const sk of tmpl.requiredSkills) {
       if (skillMap[sk]) {
-        await prisma.jobSkill.create({ data: { jobId: created.id, skillId: skillMap[sk], required: true } });
+        await prisma.jobSkill.create({
+          data: { jobId: created.id, skillId: skillMap[sk], required: true, weight: reqWeight },
+        });
       }
     }
     for (const sk of tmpl.preferredSkills) {
       if (skillMap[sk]) {
-        await prisma.jobSkill.create({ data: { jobId: created.id, skillId: skillMap[sk], required: false } });
+        await prisma.jobSkill.create({
+          data: { jobId: created.id, skillId: skillMap[sk], required: false, weight: randFloat(0.3, 0.55) },
+        });
       }
     }
     jobIds.push(created.id);
@@ -607,6 +714,7 @@ async function main() {
   // ── Candidates (500) ──────────────────────────────────
   console.log('🧑‍💻 Generating 500 candidates...');
   const candidateIds: string[] = [];
+  const alignedIdsByJob: Record<string, string[]> = {};
   const candidateDataList: Array<{
     id: string; firstName: string; lastName: string; email: string;
     phone: string; location: string; summary: string;
@@ -628,19 +736,27 @@ async function main() {
     usedEmails.add(email);
 
     const yearsOfExp = randInt(0, 15);
-    let summary = '';
-    if (yearsOfExp <= 1) {
-      summary = `Aspiring ${pick(['software engineer', 'data scientist', 'frontend developer', 'backend developer'])} with ${yearsOfExp === 0 ? 'recent academic' : '1 year of'} experience. Strong foundation in programming fundamentals and eager to contribute to real-world projects.`;
-    } else if (yearsOfExp <= 4) {
-      summary = `${yearsOfExp}-year ${pick(['software', 'full-stack', 'backend', 'frontend', 'data'])} developer with experience at ${pick(COMPANIES)}. Skilled in building ${pick(['scalable', 'efficient', 'robust', 'modern'])} applications and ${pick(['REST APIs', 'microservices', 'data pipelines', 'user interfaces'])}.`;
-    } else if (yearsOfExp <= 8) {
-      summary = `Experienced ${pick(['senior', 'lead', 'staff'])} engineer with ${yearsOfExp} years of experience building ${pick(['enterprise', 'high-scale', 'mission-critical', 'distributed'])} systems. Proven track record of ${pick(['leading teams', 'architecting solutions', 'driving technical initiatives', 'mentoring engineers'])}.`;
-    } else {
-      summary = `Distinguished engineer with ${yearsOfExp}+ years of experience in ${pick(['cloud architecture', 'system design', 'platform engineering', 'technical leadership'])}. Former ${pick(['principal', 'staff', 'senior staff'])} engineer at ${pick(COMPANIES)}. Expert in building ${pick(['scalable platforms', 'distributed systems', 'high-performance infrastructure'])}.`;
-    }
 
-    const skillCount = randInt(3, 10);
-    const skillNames = pickN(ALL_SKILLS.map(s => s.name), skillCount);
+    // Role-aligned profile: skills mirror a real published job's requirements.
+    const targetRole = pickRoleForExperience(yearsOfExp);
+    const { skillNames, proficiency: roleProficiency, confidence: roleConfidence } =
+      buildRoleSkills(targetRole, yearsOfExp);
+    const alignedJobTitle = targetRole.title;
+
+    // Summary echoes the role and its technology so the product's semantic
+    // matching scores real profiles realistically instead of near zero.
+    const roleNoun = alignedJobTitle
+      .toLowerCase()
+      .replace(/^(senior|lead|junior|staff|principal|mid|entry)\s+/, '')
+      .trim();
+    const skillPhrase = skillNames.slice(0, 8).join(', ');
+    let summary = '';
+    if (yearsOfExp <= 2) {
+      summary = `Aspiring ${roleNoun} with ${yearsOfExp === 0 ? 'recent academic' : `${yearsOfExp} years of`} experience. Skilled in ${skillPhrase}. Eager to contribute to real-world ${targetRole.dept.toLowerCase()} work.`;
+    } else {
+      const tone = yearsOfExp <= 6 ? 'Solid' : yearsOfExp <= 10 ? 'Experienced' : 'Distinguished';
+      summary = `${tone} ${roleNoun} with ${yearsOfExp}+ years of experience at ${pick(COMPANIES)}. Skilled in ${skillPhrase}. Track record of shipping production software, ${pick(['collaborating with cross-functional teams', 'mentoring engineers', 'designing scalable systems', 'leading technical initiatives'])}.`;
+    }
 
     const candidateId = uuidv4();
 
@@ -658,22 +774,19 @@ async function main() {
     });
 
     candidateIds.push(candidateId);
+    (alignedIdsByJob[alignedJobTitle] = alignedIdsByJob[alignedJobTitle] || []).push(candidateId);
     candidateDataList.push({ id: candidateId, firstName, lastName, email, phone: `+1-555-${String(randInt(1000, 9999))}`, location: '', summary, skillNames, yearsOfExp });
 
-    // Create candidate skills
+    // Create candidate skills (proficiency/confidence come from the role profile)
     for (const skName of skillNames) {
       if (skillMap[skName]) {
-        const prof = yearsOfExp > 8 ? pick(['ADVANCED', 'EXPERT', 'EXPERT'])
-          : yearsOfExp > 4 ? pick(['INTERMEDIATE', 'ADVANCED', 'ADVANCED', 'EXPERT'])
-          : yearsOfExp > 1 ? pick(['BEGINNER', 'INTERMEDIATE', 'INTERMEDIATE', 'ADVANCED'])
-          : pick(['BEGINNER', 'BEGINNER', 'INTERMEDIATE']);
         await prisma.candidateSkill.create({
           data: {
             candidateId,
             skillId: skillMap[skName],
-            proficiency: prof as any,
-            yearsOfExp: randFloat(0.5, yearsOfExp),
-            confidence: randFloat(0.6, 0.98),
+            proficiency: (roleProficiency[skName] || 'INTERMEDIATE') as any,
+            yearsOfExp: randFloat(0.5, Math.max(1, yearsOfExp)),
+            confidence: roleConfidence[skName] || randFloat(0.6, 0.9),
             source: pick(['resume', 'resume', 'resume', 'self_reported']),
             evidence: `Demonstrated through ${pick(['project work', 'professional experience', 'open source contributions', 'academic projects', 'certifications'])}`,
           },
@@ -726,6 +839,9 @@ async function main() {
 
     // Create 1-3 projects
     const projCount = randInt(1, 3);
+    // Aligned candidates build projects with their own stack, so project
+    // relevance scores and skill evidence stay coherent.
+    const projTechPool = [...new Set([...skillNames, ...pickN(ALL_SKILLS.map(s => s.name), 4)])];
     for (let p = 0; p < projCount; p++) {
       await prisma.candidateProject.create({
         data: {
@@ -739,7 +855,7 @@ async function main() {
             'Video Streaming Platform', 'Natural Language Processing Tool', 'Monitoring Stack',
           ]),
           description: `Built ${pick(['a scalable', 'an efficient', 'a production-grade', 'an enterprise-level'])} ${pick(['web application', 'backend service', 'data pipeline', 'mobile app', 'ML model', 'infrastructure platform'])} handling ${pick(['thousands', 'millions', 'hundreds of thousands'])} of ${pick(['requests', 'users', 'transactions', 'events'])} per ${pick(['day', 'hour', 'month'])}.`,
-          technologies: pickN(ALL_SKILLS.filter(s => ['Programming Languages', 'Frontend', 'Backend', 'Cloud & DevOps'].includes(s.category)).map(s => s.name), randInt(3, 6)),
+          technologies: pickN(projTechPool, randInt(3, 6)),
           startDate: new Date(2020 + randInt(0, 4), randInt(0, 11), 1),
           endDate: Math.random() > 0.3 ? new Date(2022 + randInt(0, 3), randInt(0, 11), 1) : null,
         },
@@ -789,23 +905,30 @@ async function main() {
   const applicationIds: string[] = [];
   const usedJobCandidate = new Set<string>();
 
-  // Each published job gets many applications
+  // Each published job gets many applications. Candidates aligned to a job
+  // apply first, then a shuffled remainder fills the rest — this guarantees
+  // every published job has genuinely strong applicants.
   const publishedJobIds = jobIds.slice(0, 12);
   const appsPerJob = Math.ceil(1000 / publishedJobIds.length);
 
-  for (const jobId of publishedJobIds) {
-    const shuffledCandidates = [...candidateIds].sort(() => Math.random() - 0.5);
-    const numApps = Math.min(appsPerJob + randInt(-5, 10), shuffledCandidates.length);
-    
+  for (let j = 0; j < publishedJobIds.length; j++) {
+    const jobId = publishedJobIds[j];
+    const jobTitle = JOB_TEMPLATES[j].title;
+    const aligned = alignedIdsByJob[jobTitle] || [];
+    const alignedSet = new Set(aligned);
+    const rest = candidateIds.filter((id) => !alignedSet.has(id)).sort(() => Math.random() - 0.5);
+    const ordered = [...aligned, ...rest];
+    const numApps = Math.min(appsPerJob + randInt(-5, 10), ordered.length);
+
     for (let i = 0; i < numApps && appCount < 1100; i++) {
-      const candidateId = shuffledCandidates[i];
+      const candidateId = ordered[i];
       const key = `${candidateId}-${jobId}`;
       if (usedJobCandidate.has(key)) continue;
       usedJobCandidate.add(key);
 
       const status = weightedStatus();
       const appliedAt = dateBetween(new Date('2025-01-01'), new Date('2026-08-01'));
-      
+
       const app = await prisma.application.create({
         data: {
           candidateId,
@@ -823,53 +946,60 @@ async function main() {
   console.log(`  ✓ ${appCount} applications created\n`);
 
   // ── Candidate Matches ──────────────────────────────────
+  // Use the product's real matching engine (calculateMatch) so stored scores,
+  // explanations, and evidence are coherent with what live "Run matching"
+  // produces and with what the skill-gap page shows.
   console.log('🎯 Creating candidate matches...');
   let matchCount = 0;
+  let skippedMatches = 0;
   for (const jobId of publishedJobIds) {
-    const jobApps = applicationIds.slice(0); // simplified
-    const relatedApps = await prisma.application.findMany({ where: { jobId }, take: 30 });
+    const relatedApps = await prisma.application.findMany({ where: { jobId } });
     for (const app of relatedApps) {
-      const overallScore = randInt(35, 98);
-      const match = await prisma.candidateMatch.create({
-        data: {
-          candidateId: app.candidateId,
-          jobId: app.jobId,
-          overallScore,
-          skillScore: randInt(Math.max(20, overallScore - 15), Math.min(100, overallScore + 10)),
-          experienceScore: randInt(Math.max(20, overallScore - 20), Math.min(100, overallScore + 10)),
-          projectScore: randInt(Math.max(20, overallScore - 18), Math.min(100, overallScore + 8)),
-          educationScore: randInt(Math.max(30, overallScore - 12), Math.min(100, overallScore + 5)),
-          semanticScore: randInt(Math.max(25, overallScore - 15), Math.min(100, overallScore + 8)),
-        },
-      });
-      matchCount++;
-
-      // Create match evidence
-      const evidenceTypes = ['skill_match', 'experience', 'project', 'semantic'];
-      const evCount = randInt(2, 4);
-      for (let e = 0; e < evCount; e++) {
-        await prisma.matchEvidence.create({
-          data: {
-            matchId: match.id,
-            type: pick(evidenceTypes),
-            detail: pick([
-              'Strong alignment in required technical skills',
-              'Relevant professional experience at comparable scale',
-              'Project portfolio demonstrates applicable capabilities',
-              'Profile semantic similarity indicates strong job fit',
-              'Education background aligns with job requirements',
-              'Demonstrated expertise in key technology stack',
-              'Work history shows progression relevant to role level',
-              'Technical depth in core areas matches job demands',
-            ]),
-            score: randFloat(0.6, 0.98),
+      try {
+        const result = await calculateMatch(app.candidateId, app.jobId);
+        const match = await prisma.candidateMatch.upsert({
+          where: { candidateId_jobId: { candidateId: app.candidateId, jobId: app.jobId } },
+          update: {
+            overallScore: result.overallScore,
+            skillScore: result.categoryScores.skills,
+            experienceScore: result.categoryScores.experience,
+            projectScore: result.categoryScores.projects,
+            educationScore: result.categoryScores.education,
+            semanticScore: result.categoryScores.semantic,
+            explanation: result.explanation as any,
+          },
+          create: {
+            candidateId: app.candidateId,
+            jobId: app.jobId,
+            overallScore: result.overallScore,
+            skillScore: result.categoryScores.skills,
+            experienceScore: result.categoryScores.experience,
+            projectScore: result.categoryScores.projects,
+            educationScore: result.categoryScores.education,
+            semanticScore: result.categoryScores.semantic,
+            explanation: result.explanation as any,
           },
         });
+        await prisma.matchEvidence.deleteMany({ where: { matchId: match.id } });
+        if (result.evidence.length > 0) {
+          await prisma.matchEvidence.createMany({
+            data: result.evidence.map((ev) => ({
+              matchId: match.id,
+              type: ev.type,
+              detail: ev.detail,
+              score: typeof ev.score === 'number' ? ev.score : null,
+              metadata: (ev.metadata ?? {}) as Prisma.InputJsonValue,
+            })),
+          });
+        }
+        matchCount++;
+      } catch (err) {
+        skippedMatches++;
+        console.error(`    ⚠ match failed for ${app.candidateId} × ${app.jobId}: ${(err as Error).message}`);
       }
     }
-    if (matchCount > 400) break; // Cap at reasonable number
   }
-  console.log(`  ✓ ${matchCount} candidate matches created\n`);
+  console.log(`  ✓ ${matchCount} candidate matches created${skippedMatches ? ` (${skippedMatches} skipped)` : ''}\n`);
 
   // ── Interviews ─────────────────────────────────────────
   console.log('🎙  Creating interviews...');
@@ -975,12 +1105,12 @@ async function main() {
   for (const user of users.slice(0, 5)) {
     const notifCount = randInt(8, 15);
     for (let n = 0; n < notifCount; n++) {
-      const type = pick(NOTIFICATION_TYPES as any);
-      const titles = NOTIFICATION_TITLES[type] || NOTIFICATION_TITLES.system;
+      const type: string = pick(NOTIFICATION_TYPES as any);
+      const titles = NOTIFICATION_TITLES[type as keyof typeof NOTIFICATION_TITLES] || NOTIFICATION_TITLES.system;
       await prisma.notification.create({
         data: {
           userId: user.id,
-          type,
+          type: type as any,
           title: pick(titles),
           message: pick([
             'New candidate has been processed by AI',
