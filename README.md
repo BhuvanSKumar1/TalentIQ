@@ -188,47 +188,70 @@ pnpm db:seed          # Seed database with demo data
 pnpm db:reset         # Reset and reseed database
 ```
 
-## Deploying to Vercel (Frontend + API)
+## Production deployment
 
-The Vercel project serves the React frontend **and** the Express API from the
-same domain:
+The app is split across two hosts:
 
-- `build.cjs` runs `prisma generate`, compiles the API (`apps/api/dist`), then
-  builds the web frontend (`apps/web/dist`).
-- The serverless function in `api/[...path].js` mounts the compiled Express app,
-  so every `/api/*` request is handled by the API on the same domain
-  (e.g. `https://<your-app>.vercel.app/api/v1/auth/login`). No CORS needed.
-- `apps/web/src/lib/api.ts` defaults to the same-origin path `/api/v1`, so login
-  and all API calls work without a `VITE_API_URL`.
+- **Vercel** serves the React frontend (static build of `apps/web/dist`).
+- **Render** runs the Express API as a normal Node process (`apps/api`),
+  connected to a hosted PostgreSQL database.
+- `apps/web/src/lib/api.ts` calls whatever `VITE_API_URL` points to; in local
+  development it defaults to the same-origin path `/api/v1`, which Vite proxies
+  to `http://localhost:3001`.
 
-### Before your first deploy
+### 1. Database (e.g. Neon)
 
-1. **Create a hosted PostgreSQL database** (free tier is fine, e.g. Neon or
-   Supabase) and copy its connection string.
+Create a free hosted PostgreSQL (Neon or Supabase) and copy its connection
+string. You will paste it into Render (not into this repo — never commit real
+secrets).
 
-2. **Add these env vars to your Vercel project** (Project → Settings →
-   Environment Variables → Production):
+### 2. API on Render
+
+1. Push this repo to GitHub, then in Render choose **New → Blueprint** and
+   select the repo — `render.yaml` creates the `talentiq-api` service.
+2. In the service's **Environment** tab set the blank variables:
 
    | Variable | Example |
    |----------|---------|
    | `DATABASE_URL` | `postgresql://user:pass@host/db?sslmode=require` (Neon URL) |
    | `JWT_SECRET` | random string of 32+ characters |
    | `JWT_REFRESH_SECRET` | a different random string of 32+ characters |
-   | `CORS_ORIGIN` | `https://<your-app>.vercel.app` |
+   | `CORS_ORIGIN` | `https://<your-app>.vercel.app` (frontend origin) |
+   | `OPENAI_API_KEY` | optional — leave empty for offline AI mode |
 
-3. **Create the schema and seed the demo data** (run once from this repo,
-   pointing at the hosted database):
+3. Create the schema and seed the demo data **once** against the hosted
+   database (from this repo):
 
    ```bash
    DATABASE_URL="<your-neon-url>" pnpm --filter api db:push
    DATABASE_URL="<your-neon-url>" pnpm --filter api db:seed
    ```
 
-4. **Commit and push** to redeploy. The build generates the Prisma client,
-   compiles the API, builds the frontend, and Vercel serves both from one URL.
+   The seed script wipes and recreates data, so run it once — not on every
+   deploy.
 
-> Note: the seed script wipes and recreates data, so run it once against the
-> hosted database — not on every deploy.
+> Free Render instances sleep after ~15 minutes of inactivity; the first
+> request after idle takes a few seconds to wake up.
+
+### 3. Frontend on Vercel
+
+1. In your Vercel project add the **Production** env var and redeploy:
+
+   | Variable | Example |
+   |----------|---------|
+   | `VITE_API_URL` | `https://<your-api>.onrender.com/api/v1` |
+
+2. Push any repo change (or use Redeploy) so Vite bakes the new URL into the
+   bundle. Sign in with the seeded demo account, e.g. `admin@techvista.io` /
+   `password123`.
+
+### Removing the old (broken) same-domain API attempt
+
+Earlier commits added a Vercel serverless function under `api/` to serve
+`/api/*` from the Vercel domain. Vercel's frameworkless function routing cannot
+match arbitrary-depth paths like `/api/v1/auth/login` (catch-all routes are a
+Next.js feature), so that approach was removed — the current `vercel.json` and
+`build.cjs` deploy the frontend only.
 
 ## License
 

@@ -1,0 +1,36 @@
+# ============================================================
+# TalentIQ API — Render Blueprint
+#
+# Hosts the Express API as a normal long-running Node process,
+# pointing at a hosted PostgreSQL (e.g. Neon). The frontend stays
+# on Vercel and calls this API via VITE_API_URL.
+#
+# Deploy: Render dashboard → New → Blueprint → select this repo.
+# Then fill in the blank env vars (secrets) in the service's
+# Environment tab, and run `prisma db push` + `db:seed` once
+# against the hosted database (see README "Production deployment").
+# ============================================================
+services:
+  - type: web
+    name: talentiq-api
+    runtime: node
+    plan: free
+    rootDir: apps/api
+    healthCheckPath: /api/health
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: node dist/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false
