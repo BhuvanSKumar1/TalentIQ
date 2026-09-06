@@ -825,7 +825,7 @@ export async function getMatchStats(jobId: string) {
         ELSE 'low'
       END as score_range,
       COUNT(*)::int as count
-    FROM "CandidateMatch"
+    FROM "public"."CandidateMatch"
     WHERE "jobId" = ${jobId}::uuid
     GROUP BY score_range
     ORDER BY 
