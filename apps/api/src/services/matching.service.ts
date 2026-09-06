@@ -816,20 +816,25 @@ export async function getMatchStats(jobId: string) {
     _count: true,
   });
 
+  // PostgreSQL cannot reference a SELECT alias inside GROUP BY/ORDER BY,
+  // so group by ordinal and order via a subquery (also schema-qualify the
+  // table so the query works regardless of the session search_path).
   const distribution = await prisma.$queryRaw`
-    SELECT 
-      CASE 
-        WHEN "overallScore" >= 80 THEN 'excellent'
-        WHEN "overallScore" >= 60 THEN 'good'
-        WHEN "overallScore" >= 40 THEN 'moderate'
-        ELSE 'low'
-      END as score_range,
-      COUNT(*)::int as count
-    FROM "public"."CandidateMatch"
-    WHERE "jobId" = ${jobId}::uuid
-    GROUP BY score_range
+    SELECT * FROM (
+      SELECT 
+        CASE 
+          WHEN "overallScore" >= 80 THEN 'excellent'
+          WHEN "overallScore" >= 60 THEN 'good'
+          WHEN "overallScore" >= 40 THEN 'moderate'
+          ELSE 'low'
+        END as score_range,
+        COUNT(*)::int as count
+      FROM "public"."CandidateMatch"
+      WHERE "jobId" = ${jobId}::uuid
+      GROUP BY 1
+    ) t
     ORDER BY 
-      CASE score_range
+      CASE t.score_range
         WHEN 'excellent' THEN 1
         WHEN 'good' THEN 2
         WHEN 'moderate' THEN 3
