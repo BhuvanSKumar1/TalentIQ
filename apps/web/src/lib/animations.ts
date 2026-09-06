@@ -15,9 +15,19 @@ export const slideDown: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
+export const slideIn: Variants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+};
+
 export const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: { opacity: 1, scale: 1, transition: { duration: 0.3 } },
+};
+
+export const scaleUp: Variants = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 200, damping: 20 } },
 };
 
 export const staggerContainer: Variants = {
@@ -50,6 +60,20 @@ export const pageTransition: Variants = {
   exit: {
     opacity: 0,
     x: 10,
+    transition: { duration: 0.2 },
+  },
+};
+
+export const pageFadeIn: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
+  },
+  exit: {
+    opacity: 0,
+    y: -8,
     transition: { duration: 0.2 },
   },
 };
@@ -111,4 +135,49 @@ export const hoverScale = {
 
 export const tapScale = {
   scale: 0.98,
+};
+
+export const cardHover = {
+  y: -4,
+  transition: { duration: 0.2, ease: 'easeOut' },
+};
+
+export const buttonHover = {
+  scale: 1.05,
+  transition: { duration: 0.15 },
+};
+
+export const buttonTap = {
+  scale: 0.95,
+  transition: { duration: 0.1 },
+};
+
+export const pulseGlow = {
+  boxShadow: [
+    '0 0 0 0 rgba(99, 123, 255, 0.4)',
+    '0 0 0 10px rgba(99, 123, 255, 0)',
+  ],
+  transition: {
+    duration: 2,
+    repeat: Infinity,
+    repeatDelay: 1,
+  },
+};
+
+export const float = {
+  y: [-5, 5],
+  transition: {
+    duration: 3,
+    repeat: Infinity,
+    ease: 'easeInOut',
+  },
+};
+
+export const shimmer = {
+  backgroundPosition: ['200% 0', '-200% 0'],
+  transition: {
+    duration: 2,
+    repeat: Infinity,
+    ease: 'linear',
+  },
 };
