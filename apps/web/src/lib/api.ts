@@ -44,7 +44,32 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor - handle token refresh
+// Response interceptor - handle token refresh and transient failures
+//
+// The hosted API (Render free tier) sleeps after ~15 min without traffic and
+// needs 30-60s to cold-start, so the first request after idle can fail at the
+// network level. We transparently retry transient failures a few times with
+// backoff instead of surfacing "Cannot reach the server" to the user.
+const MAX_TRANSIENT_RETRIES = 3;
+const TRANSIENT_RETRY_DELAYS_MS = [3000, 8000, 15000];
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// A transient failure is a network-level error (no response at all — e.g. the
+// server was asleep/restarting) or a gateway error (mid-deploy window).
+// Real HTTP errors (4xx, and most 5xx) are NOT retried.
+function isTransientFailure(error: unknown): boolean {
+  const err = error as { response?: { status?: number }; message?: string; code?: string };
+  if (!err?.response) {
+    return (
+      err?.message === 'Network Error' ||
+      err?.code === 'ECONNABORTED' ||
+      err?.code === 'ERR_NETWORK'
+    );
+  }
+  return err.response.status === 502 || err.response.status === 503 || err.response.status === 504;
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -70,6 +95,16 @@ api.interceptors.response.use(
         }
       } else {
         window.location.href = '/login';
+      }
+    }
+
+    // Cold-start / restart resilience: retry with backoff, then give up.
+    if (originalRequest && isTransientFailure(error)) {
+      const attempts = originalRequest._retryCount ?? 0;
+      if (attempts < MAX_TRANSIENT_RETRIES) {
+        originalRequest._retryCount = attempts + 1;
+        await sleep(TRANSIENT_RETRY_DELAYS_MS[attempts] ?? 15000);
+        return api(originalRequest);
       }
     }
 

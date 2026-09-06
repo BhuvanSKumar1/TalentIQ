@@ -35,7 +35,7 @@ export function LoginPage() {
         setError(e.response.data.error);
       } else if (!e?.response && e?.message === 'Network Error') {
         setError(
-          'Cannot reach the TalentIQ server. Make sure the API backend is running and reachable, then try again.'
+          'Cannot reach the TalentIQ server. The API may be starting up after idle — please wait a moment and try again.'
         );
       } else {
         setError('Something went wrong. Please try again.');
