@@ -5,7 +5,7 @@ import {
   BookOpen, Clock, ChevronDown, ChevronRight,
   Zap, ArrowRight, Lightbulb, Award, BarChart3
 } from 'lucide-react';
-import { api } from '@/lib/api';
+import api from '@/lib/api';
 
 interface SkillComparison {
   skillName: string;

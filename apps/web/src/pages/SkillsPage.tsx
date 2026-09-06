@@ -14,8 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/cn';
 import { staggerContainer, staggerItem } from '@/lib/animations';
 import type { LayoutContext } from '@/types/layout';
-
-const API = '/api/v1';
+import api from '@/lib/api';
 
 const CATEGORY_COLORS: Record<string, string> = {
   'Programming Languages': '#6366f1',
@@ -275,11 +274,8 @@ function SkillDetailPanel({ skillId, onClose }: { skillId: string; onClose: () =
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API}/skills/${skillId}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-    })
-      .then(r => r.json())
-      .then(data => { setSkill(data); setLoading(false); })
+    api.get(`/skills/${skillId}`)
+      .then(res => { setSkill(res.data); setLoading(false); })
       .catch(() => setLoading(false));
   }, [skillId]);
 
@@ -528,18 +524,14 @@ export function SkillsPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const headers = { Authorization: `Bearer ${localStorage.getItem('accessToken')}` };
       const [graphRes, analyticsRes, catRes] = await Promise.all([
-        fetch(`${API}/skills/graph${filterCategory ? `?categoryId=${filterCategory}` : ''}`, { headers }),
-        fetch(`${API}/skills/analytics`, { headers }),
-        fetch(`${API}/skills/categories`, { headers }),
+        api.get(`/skills/graph${filterCategory ? `?categoryId=${filterCategory}` : ''}`),
+        api.get('/skills/analytics'),
+        api.get('/skills/categories'),
       ]);
-      const [graph, analyticsData, cats] = await Promise.all([
-        graphRes.json(), analyticsRes.json(), catRes.json(),
-      ]);
-      setGraphData(graph);
-      setAnalytics(analyticsData);
-      setCategories(cats);
+      setGraphData(graphRes.data);
+      setAnalytics(analyticsRes.data);
+      setCategories(catRes.data);
     } catch { /* keep existing */ }
     setLoading(false);
   }, [filterCategory]);
