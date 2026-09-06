@@ -14,8 +14,7 @@ import { ResumeUpload } from '@/components/features/candidates/ResumeUpload';
 import { cn } from '@/lib/cn';
 import { DemoBadge } from '@/components/shared/DemoBadge';
 import type { LayoutContext } from '@/types/layout';
-
-const API_BASE = '/api/v1';
+import api from '@/lib/api';
 
 const proficiencyColors: Record<string, string> = {
   EXPERT: 'bg-brand-600/10 text-brand-400 border-brand-600/20',
@@ -58,16 +57,8 @@ export function CandidatesPage() {
       if (query) params.set('search', query);
       params.set('limit', '50');
 
-      const response = await fetch(`${API_BASE}/candidates?${params}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCandidates(data.data || []);
-      }
+      const response = await api.get(`/candidates?${params}`);
+      setCandidates(response.data.data || []);
     } catch {
       // Keep existing candidates on error
     } finally {
