@@ -13,8 +13,13 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loginDemo } = useAuth();
   const navigate = useNavigate();
+
+  const handleDemoLogin = (role: 'recruiter' | 'admin') => {
+    loginDemo(role);
+    navigate('/dashboard');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,8 +39,16 @@ export function LoginPage() {
       } else if (e?.response?.data?.error) {
         setError(e.response.data.error);
       } else if (!e?.response && e?.message === 'Network Error') {
+        // Automatically switch to demo mode if network fails on demo accounts
+        if (email.includes('admin')) {
+          handleDemoLogin('admin');
+          return;
+        } else if (email.includes('recruiter')) {
+          handleDemoLogin('recruiter');
+          return;
+        }
         setError(
-          'Cannot reach the TalentIQ server. The API may be starting up after idle — please wait a moment and try again.'
+          'Cannot reach the TalentIQ server. You can click one of the instant demo buttons below to explore without waiting!'
         );
       } else {
         setError('Something went wrong. Please try again.');
@@ -238,13 +251,40 @@ export function LoginPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="mt-6 rounded-lg border border-surface-300 bg-surface-100/50 p-4"
+            className="mt-6 rounded-xl border border-brand-500/20 bg-brand-500/5 p-4 space-y-3"
           >
-            <p className="text-xs font-medium text-surface-700 mb-2">Demo Accounts</p>
-            <div className="space-y-1 text-xs text-surface-600">
-              <p><span className="font-medium text-surface-800">Admin:</span> admin@techvista.io</p>
-              <p><span className="font-medium text-surface-800">Recruiter:</span> recruiter@techvista.io</p>
-              <p><span className="font-medium text-surface-800">Password:</span> password123</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-brand-400">⚡ Instant 1-Click Demo</p>
+              <span className="text-[10px] bg-brand-500/10 text-brand-300 px-2 py-0.5 rounded font-medium border border-brand-500/20">
+                Zero Setup
+              </span>
+            </div>
+            <p className="text-xs text-surface-600">
+              Jump straight into the full recruiting experience with pre-seeded candidates, AI matches, and live analytics.
+            </p>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => handleDemoLogin('recruiter')}
+                className="w-full text-xs font-medium border-brand-500/30 hover:border-brand-500 hover:bg-brand-500/10"
+              >
+                Recruiter Demo
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => handleDemoLogin('admin')}
+                className="w-full text-xs font-medium border-brand-500/30 hover:border-brand-500 hover:bg-brand-500/10"
+              >
+                Talent Director
+              </Button>
+            </div>
+            <div className="pt-2 border-t border-surface-300/50 flex justify-between text-2xs text-surface-600">
+              <span>Admin: admin@techvista.io</span>
+              <span>Pass: password123</span>
             </div>
           </motion.div>
         </motion.div>

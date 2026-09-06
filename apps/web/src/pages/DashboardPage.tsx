@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useOutletContext, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Briefcase, Users, Eye, Star, Calendar, TrendingUp, Clock,
   ChevronRight, Sparkles, Brain, AlertTriangle, UserCheck,
+  Zap, Target, ShieldCheck, ArrowRight, CheckCircle2,
 } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -13,6 +14,7 @@ import {
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { KpiCard } from '@/components/features/dashboard/KpiCard';
 import { ChartTooltip } from '@/components/features/dashboard/ChartTooltip';
 import { FilterBar, type DashboardFilters } from '@/components/features/dashboard/FilterBar';
@@ -42,7 +44,9 @@ const insightConfig: Record<string, { icon: React.ElementType; border: string; i
 // ── Main Dashboard ─────────────────────────────────────
 export default function DashboardPage() {
   const { onOpenCommandPalette, onOpenNotifications, onOpenMobileNav } = useOutletContext<LayoutContext>();
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<DashboardFilters>({ dateRange: '6m', job: 'all', department: 'all' });
+  const [selectedInsight, setSelectedInsight] = useState<any | null>(null);
 
   // In a real app, filters would trigger API calls. For now, we show all data.
   const isLoading = false;
@@ -81,6 +85,38 @@ export default function DashboardPage() {
       </div>
 
       <div className="p-4 sm:p-6 space-y-6">
+        {/* Quick Actions Shortcuts */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
+        >
+          {[
+            { title: 'Run AI Matching', desc: 'Score candidates against roles', icon: Target, href: '/matching', color: 'text-brand-400 bg-brand-500/10 border-brand-500/20' },
+            { title: 'Talent Directory', desc: 'Explore candidate skill profiles', icon: Users, href: '/candidates', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+            { title: 'Recruiter Copilot', desc: 'Ask AI questions & compare talent', icon: Brain, href: '/ai', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+            { title: 'Fairness & Bias Audit', desc: 'Monitor EEOC 4/5ths compliance', icon: ShieldCheck, href: '/fairness', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+          ].map((action) => (
+            <div
+              key={action.title}
+              onClick={() => navigate(action.href)}
+              className="glass-card p-3.5 sm:p-4 rounded-xl cursor-pointer hover:border-brand-500/30 group transition-all"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className={cn('p-2 rounded-lg border', action.color)}>
+                  <action.icon className="h-4 w-4" />
+                </div>
+                <ArrowRight className="h-4 w-4 text-surface-600 group-hover:text-brand-300 group-hover:translate-x-0.5 transition-all" />
+              </div>
+              <h3 className="text-sm font-semibold text-surface-950 group-hover:text-brand-300 transition-colors">
+                {action.title}
+              </h3>
+              <p className="text-2xs text-surface-600 mt-0.5">{action.desc}</p>
+            </div>
+          ))}
+        </motion.div>
+
         {/* Filter Bar */}
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           <FilterBar filters={filters} onChange={setFilters} jobs={filterJobs} departments={filterDepartments} />
@@ -153,12 +189,19 @@ export default function DashboardPage() {
                       initial={{ opacity: 0, x: 8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.4 + i * 0.08 }}
-                      className={cn('rounded-lg border p-3 transition-colors hover:shadow-sm cursor-pointer', cfg.border)}
+                      onClick={() => setSelectedInsight(insight)}
+                      className={cn(
+                        'rounded-lg border p-3 transition-all hover:scale-[1.01] hover:shadow-md cursor-pointer group',
+                        cfg.border
+                      )}
                     >
                       <div className="flex items-start gap-2.5">
-                        <InsightIcon className={cn('h-4 w-4 mt-0.5 shrink-0', cfg.iconColor)} />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-surface-950 leading-snug">{insight.message}</p>
+                        <InsightIcon className={cn('h-4 w-4 mt-0.5 shrink-0 transition-transform group-hover:scale-110', cfg.iconColor)} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-surface-950 leading-snug">{insight.message}</p>
+                            <ChevronRight className="h-3.5 w-3.5 text-surface-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
                           <p className="text-xs text-surface-600 mt-0.5">{insight.detail}</p>
                         </div>
                       </div>
@@ -397,6 +440,64 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
         </div>
+
+        {/* AI Insight Action Modal */}
+        <Dialog open={!!selectedInsight} onOpenChange={(open) => !open && setSelectedInsight(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500/10 text-brand-400">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <DialogTitle className="text-base">AI Recommendation Action</DialogTitle>
+              </div>
+              <DialogDescription className="text-surface-600 text-xs">
+                Contextual intelligence generated from recruitment pipeline telemetry.
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedInsight && (
+              <div className="space-y-4 py-2">
+                <div className="p-3.5 rounded-xl bg-surface-100 border border-surface-300">
+                  <p className="text-sm font-semibold text-surface-950 mb-1">{selectedInsight.message}</p>
+                  <p className="text-xs text-surface-600 leading-relaxed">{selectedInsight.detail}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-surface-800 uppercase tracking-wider">Recommended Next Step</p>
+                  <div className="flex items-start gap-2 text-xs text-surface-700 bg-brand-500/5 p-3 rounded-lg border border-brand-500/15">
+                    <CheckCircle2 className="h-4 w-4 text-brand-400 shrink-0 mt-0.5" />
+                    <span>
+                      {selectedInsight.type === 'bottleneck'
+                        ? 'Trigger semantic auto-matching to rank the pending screening applicants and fast-track top 5 matches.'
+                        : selectedInsight.type === 'alert'
+                        ? 'Initiate AI talent search across qualified Python profiles to match against open engineering roles.'
+                        : 'Review candidate pipeline distribution and export weekly recruitment performance report.'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="flex gap-2 sm:gap-0">
+              <Button variant="ghost" size="sm" onClick={() => setSelectedInsight(null)}>
+                Dismiss
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const target = selectedInsight?.type === 'bottleneck' ? '/matching' : '/candidates';
+                  setSelectedInsight(null);
+                  navigate(target);
+                }}
+                className="gap-1.5"
+              >
+                <span>Execute Action</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

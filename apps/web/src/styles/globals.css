@@ -147,6 +147,36 @@
     transform: translateY(-1px);
   }
 
+  .glass-card {
+    background: rgba(13, 16, 23, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .glass-card:hover {
+    border-color: rgba(99, 123, 255, 0.3);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(99, 123, 255, 0.08);
+    transform: translateY(-2px);
+  }
+
+  .glow-brand {
+    box-shadow: 0 0 35px rgba(99, 123, 255, 0.15);
+  }
+
+  .glow-success {
+    box-shadow: 0 0 30px rgba(53, 201, 154, 0.15);
+  }
+
+  .badge-cyber {
+    background: rgba(99, 123, 255, 0.1);
+    border: 1px solid rgba(99, 123, 255, 0.25);
+    box-shadow: 0 0 10px rgba(99, 123, 255, 0.12);
+  }
+
   /* ── Input System ───────────────────────────────── */
   .input-premium {
     background: var(--bg-primary);

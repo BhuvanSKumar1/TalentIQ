@@ -204,8 +204,12 @@ function Hero({ scrollProgress, demoProgress, demoNodeVisibility, onDemo }: {
 }) {
   const reducedMotion = useReducedMotion();
   return (
-    <section className="relative min-h-[85vh] lg:min-h-[80vh] flex items-center overflow-hidden pt-16">
-      <div className="w-full max-w-[1400px] mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+    <section className="relative min-h-screen flex items-center overflow-hidden pt-16 bg-gradient-to-br from-[#0a0b0f] via-[#1a1d26] to-[#2c3046]">
+      {/* Decorative floating shape */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-20 right-20 w-64 h-64 bg-purple-500 rounded-full opacity-15 animate-float"></div>
+      </div>
+      <div className="w-full max-w-[1400px] mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-center relative z-10">
         {/* 3D scene — left side on desktop, below on mobile */}
         <div className="relative w-full h-[400px] md:h-[600px] lg:h-[650px] order-2 md:order-1 pointer-events-none">
           <Suspense fallback={<div className="w-full h-full" />}>
@@ -226,38 +230,37 @@ function Hero({ scrollProgress, demoProgress, demoNodeVisibility, onDemo }: {
             variants={stagger}
             className="max-w-xl"
           >
-          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 rounded-full border border-[#2c3046] bg-[#0f1117]/80 backdrop-blur-sm px-4 py-1.5 mb-6">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#10b981] animate-pulse" />
-            <span className="text-xs font-medium text-[#b4b8cc]">AI-Powered Recruitment Intelligence</span>
+            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 rounded-full border border-[#2c3046] bg-[#0f1117]/80 backdrop-blur-sm px-4 py-1.5 mb-6">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#10b981] animate-pulse" />
+              <span className="text-xs font-medium text-[#b4b8cc]">AI-Powered Recruitment Intelligence</span>
+            </motion.div>
+
+            <motion.h1 variants={fadeUp} className="font-extrabold text-[#e2e4ed] tracking-tight leading-[1.08] mb-6" style={{ fontSize: 'clamp(2.25rem, 4vw + 1rem, 5rem)' }}>
+              Turn Talent Data Into <span className="text-gradient">Better Hiring Decisions</span>
+            </motion.h1>
+
+            <motion.p variants={fadeUp} className="text-lg text-[#b4b8cc] leading-relaxed mb-8 max-w-lg">
+              TalentIQ combines AI-powered resume intelligence, semantic candidate matching,
+              skill intelligence, and recruiter analytics into one intelligent hiring platform.
+            </motion.p>
+
+            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-start gap-4">
+              <Button asChild size="lg" className="h-12 px-8 text-base font-semibold">
+                <Link to="/register">
+                  Start Exploring
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                className="h-12 px-8 text-base"
+                onClick={onDemo}
+              >
+                View Live Demo
+              </Button>
+            </motion.div>
           </motion.div>
-
-          <motion.h1 variants={fadeUp} className="font-extrabold text-[#e2e4ed] tracking-tight leading-[1.08] mb-6" style={{ fontSize: 'clamp(2.25rem, 4vw + 1rem, 5rem)' }}>
-            Turn Talent Data Into{' '}
-            <span className="text-gradient">Better Hiring Decisions</span>
-          </motion.h1>
-
-          <motion.p variants={fadeUp} className="text-lg text-[#b4b8cc] leading-relaxed mb-8 max-w-lg">
-            TalentIQ combines AI-powered resume intelligence, semantic candidate matching,
-            skill intelligence, and recruiter analytics into one intelligent hiring platform.
-          </motion.p>
-
-          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-start gap-4">
-            <Button asChild size="lg" className="h-12 px-8 text-base font-semibold">
-              <Link to="/register">
-                Start Exploring
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              className="h-12 px-8 text-base"
-              onClick={onDemo}
-            >
-              View Live Demo
-            </Button>
-          </motion.div>
-        </motion.div>
         </div>
       </div>
     </section>

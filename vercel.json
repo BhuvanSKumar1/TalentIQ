@@ -3,7 +3,8 @@
   "buildCommand": "node build.cjs",
   "outputDirectory": "apps/web/dist",
   "framework": null,
-  "rewrites": [
+  "env": { "VITE_API_URL": "https://talentiq-api-8f06.onrender.com" },
+    "rewrites": [
     {
       "source": "/((?!assets/).*)",
       "destination": "/index.html"
