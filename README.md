@@ -249,7 +249,7 @@ The app is split across two hosts:
 - **Vercel** serves the React frontend (static build of `apps/web/dist`).
 - **Render** runs the Express API (`apps/api`) as a Node process, connected to a hosted PostgreSQL database.
 - `apps/web/src/lib/api.ts` calls whatever `VITE_API_URL` points to. A bare origin (e.g. `https://my-api.onrender.com`) gets `/api/v1` appended automatically. Without it, the client uses the same-origin path `/api/v1`.
-- Failed requests are retried with backoff to absorb Render cold starts, then fall back to demo data.
+- When the API is unreachable (e.g. during a Render cold start), the frontend falls back to built-in demo data.
 
 ### 1. Database (e.g. Neon)
 
